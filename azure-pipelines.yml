@@ -29,23 +29,43 @@ stages:
         tags: |
           $(tag)
           latest
-
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.SourcesDirectory)/azure-vote/azure-vote-all-in-one-redis.yaml'
+    artifact: 'manifests'
+    publishLocation: 'pipeline'
           
 - stage: Deploy
   displayName: Deploy to Dev
   dependsOn: Build
+  variables:
+   acrsecret: k8examplesacrauth
   jobs:
   - job: Deploy
     displayName: Deploy to AKS
     pool:
       vmImage: ubuntu-latest
     steps: 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'service connection'
-    repository: '$(imageRepo)'
-    command: 'buildAndPush'
-    Dockerfile: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
-    tags: |
-      $(tag)
-      latest
+       - task: DownloadPipelineArtifact@2
+         inputs:
+          buildType: 'current'
+          artifactName: 'manifests'
+          targetPath: '$(Pipeline.Workspace)/manifests'
+
+       - task: KubernetesManifest@1
+         inputs:
+          action: 'createSecret'
+          connectionType: 'kubernetesServiceConnection'
+          kubernetesServiceConnection: 'service connection for k8'
+          namespace: 'default'
+          secretType: 'dockerRegistry'
+          secretName: '$(acrsecret)'
+          dockerRegistryEndpoint: 'service connection'
+       - task: KubernetesManifest@1
+         inputs:
+          action: 'deploy'
+          connectionType: 'kubernetesServiceConnection'
+          kubernetesServiceConnection: 'service connection for k8'
+          namespace: 'default'
+          manifests: 
+           $(Pipeline.workspace)/manifests/azure-vote-all-in-one-redis.yaml
