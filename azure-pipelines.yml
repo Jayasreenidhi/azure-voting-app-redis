@@ -28,12 +28,12 @@ stages:
         dockerfile: '$(Build.SourcesDirectory)/azure-vote/Dockerfile'
         tags: |
           $(tag)
-          latest
-- task: PublishPipelineArtifact@1
-  inputs:
-    targetPath: '$(Build.SourcesDirectory)/azure-vote/azure-vote-all-in-one-redis.yaml'
-    artifact: 'manifests'
-    publishLocation: 'pipeline'
+          latest 
+    - task: PublishPipelineArtifact@1
+      inputs:
+       targetPath: '$(Build.SourcesDirectory)/azure-vote/azure-vote-all-in-one-redis.yaml'
+       artifact: 'manifests'
+       publishLocation: 'pipeline'
           
 - stage: Deploy
   displayName: Deploy to Dev
